@@ -1,7 +1,6 @@
 # Import fastapi and create a default test route
-from re import template
+import requests
 from fastapi import FastAPI
-import fastapi
 
 app = FastAPI()
 
@@ -11,15 +10,26 @@ async def root():
     '''Returns Hello world for basic testing'''
     return {'message': 'Hello world!!'}
 
+
 @app.get('/items/{item_id}')
-async def read_item(item_id: int, q: str | None = None, short: bool = True):
+async def read_item(item_id: int, short: bool = True):
     if not short:
         return {'description': short}
     return {'item_id': item_id}
 
+
 async def call_api(endpoint: str, key: str, city: str):
-        temperature, humidity = [0, 1]
-        return temperature, humidity
+        params = {'key': key, 'q': city}
+        response = requests.get(endpoint, params=params)
+        if response.status_code == 200:
+            data = response.json()
+            temperature = data['current']['temp_c']
+            humidity = data['current']['humidity']
+            return temperature, humidity
+        else:
+            print(f'Error: {response.status_code} - {response.text}')
+            return {'error': response.text}
+
 
 @app.get('/weather/{city}')
 async def get_weather(city: str, short: bool = True):
@@ -34,6 +44,3 @@ async def get_weather(city: str, short: bool = True):
     if not short:
         return {'Temp': temperature, 'Humidity': humidity}
     return {'Temp': temperature}
-
-## TODO
-'''Complete the call api function to send request to weather api and get the data'''
