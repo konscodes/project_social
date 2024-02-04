@@ -1,8 +1,30 @@
 # Import fastapi and create a default test route
+from typing import Optional
+
 import requests
-from fastapi import FastAPI
+from fastapi import FastAPI, status
+from fastapi.exceptions import HTTPException
+from pydantic.main import BaseModel
 
 app = FastAPI()
+
+
+# Utilize pydantic schema to perform automatic type checking of incoming data
+class Post(BaseModel):
+    title: str
+    description: str
+    rating: Optional[int] = None
+
+
+my_posts = [{
+    'title': 'Test 1',
+    'description': 'This is a post',
+    'rating': 1
+}, {
+    'title': 'Test 2',
+    'description': 'This is a post',
+    'rating': 2
+}]
 
 
 @app.get('/')
@@ -12,23 +34,54 @@ async def root():
 
 
 @app.get('/items/{item_id}')
-async def read_item(item_id: int, short: bool = True):
+def read_item(item_id: int, short: bool = True):
     if not short:
         return {'description': short}
     return {'item_id': item_id}
 
 
+@app.post('/items/{item_id}')
+def create_item(item_id: int):
+    return {'message': f'Successfully created item {item_id}'}
+
+
+@app.get('/posts/')
+def get_posts():
+    return my_posts
+
+
+@app.get('/posts/{post_id}')
+def get_post(post_id: int, short: bool = True):
+    try:
+        posts = my_posts[post_id]
+
+        if not short:
+            return {'data': posts}
+        return {'title': posts['title']}
+
+    except IndexError:
+        print('Error: post not found')
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail='post not found') from IndexError
+
+
+@app.post('/posts/', status_code=status.HTTP_201_CREATED)
+def create_post(post: Post):
+    my_posts.append(post.model_dump())
+    return {'message': f'Successfully created post {post.title}'}
+
+
 async def call_api(endpoint: str, key: str, city: str):
-        params = {'key': key, 'q': city}
-        response = requests.get(endpoint, params=params)
-        if response.status_code == 200:
-            data = response.json()
-            temperature = data['current']['temp_c']
-            humidity = data['current']['humidity']
-            return temperature, humidity
-        else:
-            print(f'Error: {response.status_code} - {response.text}')
-            return {'error': response.text}
+    params = {'key': key, 'q': city}
+    response = requests.get(endpoint, params=params)
+    if response.status_code == 200:
+        data = response.json()
+        temperature = data['current']['temp_c']
+        humidity = data['current']['humidity']
+        return temperature, humidity
+    else:
+        print(f'Error: {response.status_code} - {response.text}')
+        return {'error': response.text}
 
 
 @app.get('/weather/{city}')
