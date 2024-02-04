@@ -71,6 +71,17 @@ def create_post(post: Post):
     return {'message': f'Successfully created post {post.title}'}
 
 
+@app.delete('/posts/{post_id}', status_code=status.HTTP_204_NO_CONTENT)
+def delete_post(post_id: int):
+    try:
+        my_posts.pop(post_id)
+        return {'message': f'Successfully deleted the post {post_id}'}
+    except IndexError:
+        print('Error: post not found')
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail='post not found') from IndexError
+
+
 async def call_api(endpoint: str, key: str, city: str):
     params = {'key': key, 'q': city}
     response = requests.get(endpoint, params=params)
