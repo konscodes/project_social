@@ -58,7 +58,6 @@ def get_post(post_id: int, short: bool = True):
         if not short:
             return {'data': posts}
         return {'title': posts['title']}
-
     except IndexError:
         print('Error: post not found')
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -69,6 +68,17 @@ def get_post(post_id: int, short: bool = True):
 def create_post(post: Post):
     my_posts.append(post.model_dump())
     return {'message': f'Successfully created post {post.title}'}
+
+
+@app.put('/posts/{post_id}')
+def update_post(post_id: int, post: Post):
+    try:
+        my_posts[post_id] = post.model_dump()
+        return {'message': f'Successfully updated post {post_id}'}
+    except IndexError:
+        print('Error: post not found')
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail='post not found') from IndexError
 
 
 @app.delete('/posts/{post_id}', status_code=status.HTTP_204_NO_CONTENT)
