@@ -16,11 +16,12 @@ CREATE TABLE IF NOT EXISTS users (
 '''
 
 create_posts_table = '''--sql
-CREATE TABLE IF NOT EXISTS posts(
+CREATE TABLE IF NOT EXISTS posts_test(
   id INTEGER PRIMARY KEY AUTOINCREMENT, 
   title TEXT NOT NULL, 
-  description TEXT NOT NULL, 
+  content TEXT NOT NULL, 
   user_id INTEGER NOT NULL, 
+  date_created DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users (id)
 );
 '''
@@ -57,7 +58,7 @@ VALUES
 
 create_posts = '''--sql
 INSERT INTO
-  posts (title, description, user_id)
+  posts (title, content, user_id)
 VALUES
   ("Happy", "I am feeling very happy today", 1),
   ("Hot Weather", "The weather is very hot today", 2),
@@ -92,12 +93,41 @@ VALUES
   (3, 6);
 '''
 
+add_column = '''--sql
+ALTER TABLE posts ADD COLUMN date_created TEXT;
+'''
+
+update_column = '''--sql
+UPDATE posts SET date_created = CURRENT_TIMESTAMP WHERE date_created IS NULL;
+'''
+
+update_column = '''--sql
+UPDATE posts SET date_created = CURRENT_TIMESTAMP WHERE date_created IS NULL;
+'''
+
+set_column_default = '''--sql
+ALTER TABLE posts ALTER COLUMN date_created SET DEFAULT CURRENT_TIMESTAMP;
+'''
+
 select_users = '''--sql
 SELECT * from users;
 '''
 
 select_posts = '''--sql
 SELECT * from posts;
+'''
+
+copy_table = '''--sql
+INSERT INTO posts_test (title, content, user_id) 
+SELECT title, description, user_id FROM posts;
+'''
+
+drop_table = '''--sql
+DROP TABLE posts;
+'''
+
+rename_table = '''--sql
+ALTER TABLE posts_test RENAME TO posts;
 '''
 
 
@@ -143,10 +173,12 @@ if __name__ == '__main__':
     # execute_query(connection, query=create_posts)
     # execute_query(connection, query=create_comments)
     # execute_query(connection, query=create_likes)
-
-    users = execute_read_query(connection, select_users)
-    if users:
-        [print(user) for user in users]
+    # execute_query(connection, query=add_column)
+    # execute_query(connection, query=update_column)
+    # execute_query(connection, query=set_column_default)
+    # execute_query(connection, query=copy_table)
+    # execute_query(connection, query=drop_table)
+    # execute_query(connection, query=rename_table)
 
     posts = execute_read_query(connection, select_posts)
     if posts:

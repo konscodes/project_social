@@ -1,5 +1,6 @@
 # Import fastapi and create a default test route
 import sqlite3
+from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
@@ -18,8 +19,9 @@ app = FastAPI()
 class Post(BaseModel):
     id: Optional[int] = None
     title: str
-    description: str
+    content: str
     user_id: int
+    date_created: Optional[datetime] = None
 
 
 def get_connection():
@@ -53,8 +55,9 @@ def get_posts(connection: sqlite3.Connection = Depends(get_connection)):
         post_objects.append(
             Post(id=post[0],
                  title=post[1],
-                 description=post[2],
-                 user_id=post[3]))
+                 content=post[2],
+                 user_id=post[3],
+                 date_created=post[4]))
     return post_objects
 
 
@@ -74,8 +77,9 @@ def get_post(post_id: int,
                             detail='Post not found')
     post_object = Post(id=post[0],
                        title=post[1],
-                       description=post[2],
-                       user_id=post[3])
+                       content=post[2],
+                       user_id=post[3],
+                       date_created=post[4])
     if short:
         return {'title': post_object.title}
     return post_object
@@ -85,11 +89,10 @@ def get_post(post_id: int,
 def create_post(post: Post,
                 connection: sqlite3.Connection = Depends(get_connection)):
     create_post_query = '''--sql
-    INSERT INTO posts (title, description, user_id) VALUES (?, ?, ?);
+    INSERT INTO posts (title, content, user_id) VALUES (?, ?, ?);
     '''
     cursor = connection.cursor()
-    cursor.execute(create_post_query,
-                   (post.title, post.description, post.user_id))
+    cursor.execute(create_post_query, (post.title, post.content, post.user_id))
     connection.commit()
     cursor.close()
     return {'message': f'Successfully created post {post.title}'}
@@ -100,11 +103,11 @@ def update_post(post_id: int,
                 post: Post,
                 connection: sqlite3.Connection = Depends(get_connection)):
     update_post_query = '''--sql
-    UPDATE posts SET title = ?, description = ?, user_id = ? WHERE id = ?;
+    UPDATE posts SET title = ?, content = ?, user_id = ? WHERE id = ?;
     '''
     cursor = connection.cursor()
     cursor.execute(update_post_query,
-                   (post.title, post.description, post.user_id, post_id))
+                   (post.title, post.content, post.user_id, post_id))
     connection.commit()
     cursor.close()
     return {'message': f'Successfully updated post {post_id}'}
