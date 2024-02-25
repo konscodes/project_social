@@ -1,7 +1,7 @@
 # Import fastapi and create a default test route
 import sqlite3
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.responses import JSONResponse
@@ -16,7 +16,7 @@ app = FastAPI()
 
 # Utilize pydantic schema to perform automatic type checking of incoming data
 class Post(BaseModel):
-    id: int
+    id: Optional[int] = None
     title: str
     description: str
     user_id: int
@@ -58,7 +58,7 @@ def get_posts(connection: sqlite3.Connection = Depends(get_connection)):
     return post_objects
 
 
-@app.get('/posts/{post_id}', response_model=Post)
+@app.get('/posts/{post_id}', response_model=Post | dict)
 def get_post(post_id: int,
              short: bool = True,
              connection: sqlite3.Connection = Depends(get_connection)):
@@ -72,12 +72,13 @@ def get_post(post_id: int,
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail='Post not found')
+    post_object = Post(id=post[0],
+                       title=post[1],
+                       description=post[2],
+                       user_id=post[3])
     if short:
-        return {'title': post[1]}
-    return Post(id=post[0],
-                title=post[1],
-                description=post[2],
-                user_id=post[3])
+        return {'title': post_object.title}
+    return post_object
 
 
 @app.post('/posts/', status_code=status.HTTP_201_CREATED)
@@ -120,7 +121,3 @@ def delete_post(post_id: int,
     connection.commit()
     cursor.close()
     return {'message': f'Successfully deleted the post {post_id}'}
-
-
-# TODO
-# Completed get_posts however need to check other paths as they are still not passing the validation
