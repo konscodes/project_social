@@ -6,8 +6,10 @@ DATABASE_URL = 'sqlite:///./db/main.sqlite'
 # Create the database engine
 engine = create_engine(DATABASE_URL)
 
+
 # Create the tables
-SQLModel.metadata.create_all(engine)
+def create_tables():
+    SQLModel.metadata.create_all(engine)
 
 
 # Dependency to get the database session
