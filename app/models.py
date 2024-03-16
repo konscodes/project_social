@@ -1,54 +1,53 @@
+import re
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, validator
-from sqlmodel import Field, SQLModel
+from pydantic import EmailStr, validator
+from sqlmodel import VARCHAR, Column, Field, SQLModel
 
 
-# Define the SQLModel for the Post table
-class PostBase(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    title: str
-    content: str
-    user_id: int
+# Define the Post model; it is only Pydantic data model
+class PostBase(SQLModel):
+    title: str = Field(default=None, nullable=False)
+    content: str = Field(default=None, nullable=False)
+    user_id: int = Field(default=None, nullable=False)
+    published: Optional[bool] = Field(default=True, nullable=False)
+
+
+# Define the Post model that declares the data in the database
+# Represents a table; it is both Pydantic model and SQLAlchemy model
+class Post(PostBase, table=True):
+    post_id: Optional[int] = Field(default=None, primary_key=True)
     date_created: datetime = Field(default=datetime.now())
-    published: Optional[bool] = Field(default=True)
 
 
-# Define the schema for a general response
-class PostLimited(BaseModel):
-    id: int
-    title: str
-    content: str
-    user_id: int
+# Define the schema for Creating a new Post; it is only Pydantic data model
+# Declares required fields in addition to fields from Base model
+class PostCreate(PostBase):
+    pass
+
+
+# Define the schema for Reading a Post; it is only Pydantic data model
+# These additional fields will shape the response model when requeuing a user data
+class PostRead(PostBase):
+    post_id: int
     date_created: datetime
 
 
-# Define the schema for a response upon post creation
-class CreatePost(BaseModel):
-    message: str = 'Successfully created post'
-    id: int
-    title: str
+# Define the schema for Updating a Post; independent Pydantic data model
+# We create an independent model since the same fields are required in Base
+class PostUpdate(SQLModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    user_id: Optional[int] = None
+    published: Optional[bool] = None
 
 
-# Define the schema for a response upon post creation
-class UpdatePost(BaseModel):
-    message: str = 'Successfully updated post'
-    id: int
-    title: str
+# Define the User model; it is only Pydantic data model
+class UserBase(SQLModel):
+    name: str = Field(nullable=False)
+    email: EmailStr = Field(sa_column=Column("email", VARCHAR, unique=True))
 
-
-# Define the SQLModel for the User table
-class UserBase(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    name: str = Field(min_length=1)
-    email: str = Field(min_length=1, default=None, unique=True)
-    password: str = Field(min_length=1)
-    date_created: datetime = Field(default=datetime.now(), nullable=False)
-
-    # TODO
-    # Name field is accepted as empty which is not good, need to fix
-    # validator doesnt work as expected
     @validator('name')
     def name_must_not_be_empty(cls, v):
         if v.strip() == '':
@@ -56,24 +55,40 @@ class UserBase(SQLModel, table=True):
         return v
 
 
-# Define the schema for a general response
-class UserLimited(BaseModel):
-    id: int
-    name: str
-    email: str
+# Define the User model that declares the data in the database
+# Represents a table; it is both Pydantic model and SQLAlchemy model
+class User(UserBase, table=True):
+    user_id: Optional[int] = Field(default=None, primary_key=True)
+    date_created: datetime = Field(default=datetime.now(), nullable=False)
 
 
-# Define the schema for a response upon user creation
-class CreateUser(BaseModel):
-    message: str = 'Successfully created user'
-    id: int
-    name: str
-    email: str
+# Define the schema for Creating a new User; it is only Pydantic data model
+# Declares required fields in addition to fields from Base model
+class UserCreate(UserBase):
+    password: str = Field(nullable=False, min_length=6)
+
+    @validator('password')
+    def validate_password(cls, v):
+        if len(v) < 6:
+            raise ValueError('Password must be at least 6 characters long')
+        if not re.search(r'\W', v):
+            raise ValueError(
+                'Password must contain at least one special character')
+        if not re.search(r'[A-Z]', v):
+            raise ValueError(
+                'Password must contain at least one uppercase letter')
+        return v
 
 
-# Define the schema for a response upon user creation
-class UpdateUser(BaseModel):
-    message: str = 'Successfully updated user'
-    id: int
-    name: str
-    email: str
+# Define the schema for Reading a User; it is only Pydantic data model
+# These additional fields will shape the response model when requeuing a user data
+class UserRead(UserBase):
+    user_id: int
+    date_created: datetime
+
+
+# Define the schema for Updating a User; independent Pydantic data model
+# We create an independent model since the same fields are required in Base
+class UserUpdate(SQLModel):
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None

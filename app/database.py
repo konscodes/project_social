@@ -8,7 +8,7 @@ engine = create_engine(DATABASE_URL)
 
 
 # Create the tables
-def create_tables():
+def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
 
 
